@@ -89,9 +89,9 @@ class RelatedPartyChecker:
     def __init__(self, api_key: str):
         self.client = anthropic.Anthropic(
             api_key=api_key,
-            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            base_url="https://coding.dashscope.aliyuncs.com/apps/anthropic",
         )
-        self.model = "claude-sonnet-4-5"
+        self.model = "glm-5"
 
     def search(self, query: str, max_results: int = 5) -> list[dict]:
         """Execute DuckDuckGo search with retry logic."""
@@ -149,11 +149,17 @@ class RelatedPartyChecker:
             try:
                 response = self.client.messages.create(
                     model=self.model,
-                    max_tokens=512,
+                    max_tokens=1024,
                     system=SYSTEM_PROMPT,
                     messages=[{"role": "user", "content": user_prompt}],
                 )
-                content = response.content[0].text
+                # Extract text from content blocks (handle thinking blocks)
+                content = ""
+                for block in response.content:
+                    if hasattr(block, 'text'):
+                        content += block.text
+                    elif hasattr(block, 'type') and block.type == 'text':
+                        content += getattr(block, 'text', '')
                 # Parse JSON from response
                 json_match = re.search(r"\{[\s\S]*\}", content)
                 if json_match:
@@ -163,7 +169,7 @@ class RelatedPartyChecker:
                     "relation_type": None,
                     "confidence": "低",
                     "evidence_quote": None,
-                    "missing_data": "API返回格式错误",
+                    "missing_data": f"API返回格式错误: {content[:200]}",
                 }
             except Exception as e:
                 if attempt == 0:
@@ -209,11 +215,12 @@ class RelatedPartyChecker:
         )
 
         # Judge relationship
+        result = None
         try:
             result = self.judge_relationship(
                 vietnam_company, china_company, evidence
             )
-        except Exception as e:
+        except Exception as ex:
             result = {
                 "conclusion": "处理失败",
                 "relation_type": None,
@@ -221,9 +228,12 @@ class RelatedPartyChecker:
                 "evidence_quote": None,
                 "missing_data": None,
             }
+            result["error"] = str(ex)
+
+        if "error" not in result:
+            result["error"] = None
 
         result["search_urls"] = "\n".join(sorted(all_urls))
-        result["error"] = None if result["conclusion"] != "处理失败" else str(e)
 
         return result
 
@@ -239,9 +249,9 @@ def main():
     args = parser.parse_args()
 
     # Check API key
-    api_key = os.environ.get("DASHSCOPE_API_KEY")
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        raise ValueError("DASHSCOPE_API_KEY environment variable not set")
+        raise ValueError("ANTHROPIC_API_KEY environment variable not set")
 
     # Read input
     df_input = pd.read_excel(args.input)

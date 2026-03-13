@@ -20,7 +20,7 @@ pip install -r requirements.txt
 
 ```bash
 # 设置 API Key
-export DASHSCOPE_API_KEY="your-api-key"
+export ANTHROPIC_API_KEY="your-api-key"
 
 # 运行
 python related_party_checker.py --input input.xlsx --output output.xlsx
