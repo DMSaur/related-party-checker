@@ -13,7 +13,7 @@ from pathlib import Path
 
 import anthropic
 import pandas as pd
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 from tqdm import tqdm
 
 # Evidence filter keywords
