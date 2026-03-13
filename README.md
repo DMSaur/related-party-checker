@@ -19,8 +19,8 @@ pip install -r requirements.txt
 ## 使用
 
 ```bash
-# 设置 API Key
-export ANTHROPIC_API_KEY="your-api-key"
+# 设置 API Key (阿里云百炼 Coding Plan)
+export ANTHROPIC_API_KEY="sk-sp-xxxxx"
 
 # 运行
 python related_party_checker.py --input input.xlsx --output output.xlsx
